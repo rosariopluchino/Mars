@@ -1,0 +1,114 @@
+version: '3.7'
+services:
+    logstash:
+        build: .
+        image: marsweather:logstash
+        container_name: logstash
+        networks:
+            default:
+                ipv4_address: 10.0.100.27
+        ports:
+            - 9600:9600
+        volumes:
+            - ./Dataset:/leggo
+        depends_on:
+          - kafkaServer
+    
+    zookeeper:
+        build: .
+        image: marsweather:kafka
+        container_name: zookeeper
+        ports:
+            - 2181:2181
+        networks:
+            default:
+                ipv4_address: 10.0.100.22
+        environment:
+                - KAFKA_ACTION=start-zk
+    
+    kafkaServer:  
+        build: .
+        image: marsweather:kafka
+        container_name: kafkaServer
+        ports:
+            - 9092:9092
+        networks:
+            default:
+                ipv4_address: 10.0.100.23
+        environment:
+            - KAFKA_ACTION=start-kafka
+        depends_on:
+            - zookeeper      
+    kafkaTopic:
+        build: .
+        image: marsweather:kafka
+        container_name: kafkaTopic
+        networks:  
+            default:  
+                ipv4_address: 10.0.100.24
+        environment: 
+            - KAFKA_ACTION=create-topic
+            - KAFKA_SERVER=10.0.100.23
+            - KAFKA_TOPIC=marsweather
+        depends_on:
+            - kafkaServer
+
+    spark:
+        build: .
+        image: marsweather:spark
+        container_name: sparkSubmit
+        networks:
+            default:
+                ipv4_address: 10.0.100.26
+        depends_on:
+            - logstash
+            - kafkaServer
+            - elasticsearch
+        environment:
+            - SPARK_ACTION=spark-submit-python
+            - SPARK_PACK=org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1
+            - SPARK_FILE=main.py
+            - SPARK_ES=org.elasticsearch:elasticsearch-spark-30_2.12:7.12.1
+        ports:
+            - 4040:4040
+        volumes:
+            - ./spark/linear:/linear
+            - ./spark/code:/code
+
+    elasticsearch:
+        build: . 
+        image: marsweather:elasticsearch
+        container_name: elasticsearch
+        networks:
+            default:
+                ipv4_address: 10.0.100.30
+        ports:
+            - 9200:9200
+            - 9300:9300
+        environment:
+          - discovery.type=single-node
+          - ES_JAVA_OPTS=-Xms2g -Xmx2g
+    
+    kibana:
+        build: .
+        image: marsweather:kibana
+        container_name: kibana
+        networks: 
+            default:
+                ipv4_address: 10.0.100.25
+        ports:
+            - 5601:5601
+        depends_on: 
+            - elasticsearch
+        
+
+networks:
+    default:
+        name: tap
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 10.0.100.1/24
+
+        
+
