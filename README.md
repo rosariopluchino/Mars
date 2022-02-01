@@ -2,6 +2,7 @@
 Mars è un progetto universitario dello studente Rosario Pluchino che ha l'obiettivo di prevedere la temperatura massima di Marte acquisendo i dati meteo da api.nasa.gov elaborarli e confrontarli con i dati reali
 # Struttura
 ![Mars.png](attachment:Mars.png)
+
 Per maggiori dettagli sull'utilizzo delle tecnologie è consigliabile visionare la documentazione.
 # Guida d'uso e requisiti
 * Docker
